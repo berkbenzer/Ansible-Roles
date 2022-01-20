@@ -1,0 +1,5 @@
+[muserdel:children]
+muserdel_app
+
+[muserdel_app:children]
+app

@@ -1,0 +1,5 @@
+---
+
+- import_playbook: partition-blockdevice/blockdevice/playbook.yml
+- import_playbook: multiple-userdel/playbook.yml
+- import_playbook: lvm-configuration/playbook-partition/playbook.yml

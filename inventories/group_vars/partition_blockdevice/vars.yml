@@ -1,0 +1,8 @@
+---
+
+block_device:
+   device: /dev/sdm
+   number: 1
+   flags: [ lvm ]
+   present: state
+   end: "100%"

@@ -1,0 +1,4 @@
+---
+
+- src: git+ssh://git@stash.in.devexperts.com:7999/pa/role-partition.git
+  version: v1.4

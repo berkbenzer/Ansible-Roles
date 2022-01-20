@@ -1,0 +1,10 @@
+---
+
+  - name: Setup LVM volumes on {{ inventory_hostname_short }} node
+    with_items: "{{ block_device }}"
+    parted:
+      device: "{{ block_device.device }}"
+      number: "{{ block_device.number }}"
+      flags: [ lvm ]
+      state: present
+      part_end: "{{ block_device.end }}"

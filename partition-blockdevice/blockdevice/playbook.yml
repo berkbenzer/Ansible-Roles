@@ -1,0 +1,9 @@
+---
+
+- name: Setup platform partitions
+  hosts: partition
+  become: yes
+  tags:
+    - partition
+  roles:
+    - blockdevice

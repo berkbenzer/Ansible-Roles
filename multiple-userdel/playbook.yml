@@ -1,0 +1,9 @@
+---
+
+- name: Setup platform partitions
+  hosts: muserdel
+  become: yes
+  tags:
+    - muserdel
+  roles:
+    - multiple-userdel

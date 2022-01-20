@@ -1,0 +1,21 @@
+---
+
+
+
+partition__disks:
+  - name: /dev/xvdb1
+    vg: data
+    volumes:
+      - name: db
+        size: 20G
+        path: /db
+
+
+      - name: mongodb
+        size: 70G
+        path: /mongodb
+
+      - name: dbbackup
+        size: 20G
+        path: /dbbackup
+

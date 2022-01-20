@@ -1,0 +1,12 @@
+---
+# defaults file for blockdevice
+
+
+block__device:
+  - name: /dev/sdm
+    parted:
+      - name: /dev/sdm
+        number: 1
+        flags: [ lvm ]
+        present: state
+        part_end: "100%"

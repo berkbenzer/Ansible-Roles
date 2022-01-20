@@ -1,0 +1,10 @@
+---
+# tasks file for multiple-userdel
+
+  - name : Delete user
+    user:
+      name: '{{ item }}'
+      state: absent
+      remove: yes
+    loop: "{{ username }}"
+    when: ad_check.stdout.find('adm') != -1

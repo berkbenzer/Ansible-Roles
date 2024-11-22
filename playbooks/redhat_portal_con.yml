@@ -1,0 +1,37 @@
+---
+- name: Check connection to port 443 on specific IPs
+  hosts: "{{ target_group }}"
+  gather_facts: no
+  tasks:
+    - name: Check connection to 209.132.178.16 on port 443
+      wait_for:
+        host: 209.132.178.16
+        port: 443
+        timeout: 10
+      register: result_209_132_178_16
+
+    - name: Display result for 209.132.178.16
+      debug:
+        msg: "Connection to 209.132.178.16 on port 443 {{ 'succeeded' if result_209_132_178_16.elapsed < 10 else 'failed' }}."
+
+    - name: Check connection to 104.82.76.247 on port 443
+      wait_for:
+        host: 104.82.76.247
+        port: 443
+        timeout: 10
+      register: result_104_82_76_247
+
+    - name: Display result for 104.82.76.247
+      debug:
+        msg: "Connection to 104.82.76.247 on port 443 {{ 'succeeded' if result_104_82_76_247.elapsed < 10 else 'failed' }}."
+
+    - name: Check connection to 95.101.56.251 on port 443
+      wait_for:
+        host: 95.101.56.251
+        port: 443
+        timeout: 10
+      register: result_95_101_56_251
+
+    - name: Display result for 95.101.56.251
+      debug:
+        msg: "Connection to 95.101.56.251 on port 443 {{ 'succeeded' if result_95_101_56_251.elapsed < 10 else 'failed' }}."

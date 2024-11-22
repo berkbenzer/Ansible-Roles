@@ -1,0 +1,8 @@
+---
+- name: Register and attach Red Hat servers to the Red Hat Customer Portal
+  hosts: "{{ target_groups }}"
+  become: true
+
+  tasks:
+    - name: Register the system with Red Hat Subscription Management
+      shell: subscription-manager register --username=username ---password='Password'

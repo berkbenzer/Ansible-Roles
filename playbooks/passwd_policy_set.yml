@@ -1,0 +1,69 @@
+---
+
+- name: Update login definitions in /etc/login.defs
+  hosts: "{{ target_group }}"
+  become: yes
+  tasks:
+    - name: Ensure PASS_MAX_DAYS is set to 90
+      lineinfile:
+        path: /etc/login.defs
+        regexp: '^PASS_MAX_DAYS'
+        line: 'PASS_MAX_DAYS    90'
+        state: present
+        backup: yes
+
+    - name: Ensure PASS_MIN_LEN is set to 8
+      lineinfile:
+        path: /etc/login.defs
+        regexp: '^PASS_MIN_LEN'
+        line: 'PASS_MIN_LEN    8'
+        state: present
+        backup: yes
+
+    - name: Ensure PASS_MIN_AGE is set to 1
+      lineinfile:
+        path: /etc/login.defs
+        regexp: '^PASS_MIN_DAYS'
+        line: 'PASS_MIN_DAYS    1'
+        state: present
+
+    - name: Create custom authselect profile
+      command: authselect create-profile custom-remember --base-on sssd
+      args:
+        creates: /etc/authselect/custom/custom-remember
+
+    - name: Add `remember=5` to system-auth in custom profile
+      lineinfile:
+        path: /etc/authselect/custom/custom-remember/system-auth
+        regexp: '^(password\s+sufficient\s+pam_unix\.so.*)$'
+        line: '\1 remember=5'
+        backrefs: yes
+
+    - name: Add `remember=5` to password-auth in custom profile
+      lineinfile:
+        path: /etc/authselect/custom/custom-remember/password-auth
+        regexp: '^(password\s+sufficient\s+pam_unix\.so.*)$'
+        line: '\1 remember=5'
+        backrefs: yes
+
+    - name: Activate custom authselect profile
+      command: authselect select custom/custom-remember --force
+
+    - name: Apply authselect changes
+      command: authselect apply-changes
+
+    - name: Verify `remember=5` in system-auth
+      shell: grep pam_unix.so /etc/pam.d/system-auth
+      register: system_auth_output
+
+    - name: Verify `remember=5` in password-auth
+      shell: grep pam_unix.so /etc/pam.d/password-auth
+      register: password_auth_output
+
+    - name: Debug system-auth verification
+      debug:
+        var: system_auth_output.stdout_lines
+
+    - name: Debug password-auth verification
+      debug:
+        var: password_auth_output.stdout_lines

@@ -1,0 +1,36 @@
+---
+- name: Disable SSH Root Login
+  hosts: "{{ target_group }}"
+  become: yes
+  gather_facts: no
+
+  tasks:
+    - name: Ensure PermitRootLogin is set to no in the main sshd_config
+      ansible.builtin.lineinfile:
+        path: /etc/ssh/sshd_config
+        regexp: '^PermitRootLogin'
+        line: 'PermitRootLogin no'
+        state: present
+        validate: '/usr/sbin/sshd -t -f %s'
+
+    - name: Ensure PermitRootLogin is set to no in additional sshd_config.d files
+      ansible.builtin.find:
+        paths: /etc/ssh/sshd_config.d
+        recurse: yes
+        patterns: '*.conf'
+      register: sshd_config_d_files
+
+    - name: Ensure PermitRootLogin is set to no in found sshd_config.d files
+      ansible.builtin.lineinfile:
+        path: "{{ item.path }}"
+        regexp: '^PermitRootLogin'
+        line: 'PermitRootLogin no'
+        state: present
+        validate: '/usr/sbin/sshd -t -f %s'
+      loop: "{{ sshd_config_d_files.files }}"
+      when: sshd_config_d_files.matched > 0
+
+    - name: Restart SSH service
+      ansible.builtin.service:
+        name: sshd
+        state: restarted

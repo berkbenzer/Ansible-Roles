@@ -1,0 +1,27 @@
+---
+- name: Test network connectivity for multiple IP addresses
+  hosts: "{{ target_group }}"
+  gather_facts: false
+  vars:
+    ip_addresses:
+      - IP_ADDRESSES
+  tasks:
+    - name: Ping each IP address
+      command: ping -c 4 {{ item }}
+      with_items: "{{ ip_addresses }}"
+      register: ping_results
+      ignore_errors: yes
+
+    - name: Calculate ping statistics
+      set_fact:
+        successful_pings: "{{ ping_results.results | selectattr('rc', 'equalto', 0) | list | length }}"
+        failed_pings: "{{ ping_results.results | selectattr('rc', 'equalto', 1) | list | length }}"
+        total_attempts: "{{ ip_addresses | length }}"
+
+    - name: Display ping statistics
+      debug:
+        msg: |
+          Ping statistics:
+          Total attempts: {{ total_attempts }}
+          Successful pings: {{ successful_pings }}
+          Failed pings (Timeouts): {{ failed_pings }}

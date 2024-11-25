@@ -1,0 +1,30 @@
+---
+- name: Configure Chrony on RHEL 9
+  hosts: "{{ target_group }}"
+  become: true
+
+  vars:
+    ntp_servers:
+      - "NTP_SERVERS"
+      - "NTP_SERVERS"
+
+
+  tasks:
+    - name: Ensure Chrony is installed
+      dnf:
+        name: chrony
+        state: present
+
+    - name: Configure Chrony
+      template:
+        src: chrony.conf.j2
+        dest: /etc/chrony.conf
+        owner: root
+        group: root
+        mode: '0644'
+
+    - name: Start and enable Chrony service
+      systemd:
+        name: chronyd
+        state: started
+        enabled: true

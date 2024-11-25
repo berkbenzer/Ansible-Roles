@@ -1,0 +1,121 @@
+# tasks/main.yml
+
+
+#- name: Debug ad_domain and ad_realm variables
+#  debug:
+#    msg: "ad_domain={{ ad_domain }}, ad_realm={{ ad_realm }}, ad_domain_admin_user={{ ad_domain_admin_user }}, ad_domain_admin_password={{ ad_domain_admin_password }}"
+
+
+
+- name: Install required packages
+  yum:
+    name:
+      - realmd
+      - sssd
+      - adcli
+      - oddjob
+      - oddjob-mkhomedir
+      - authselect-compat
+      - krb5-workstation
+      - samba-common-tools
+    state: present
+  become: yes
+  tags: packages
+  ignore_errors: yes
+
+- name: Configure krb5.conf
+  template:
+    src: templates/krb5.conf.j2
+    dest: /etc/krb5.conf
+    owner: root
+    group: root
+    mode: '0644'
+  become: yes
+  tags: krb5_config
+
+
+- name: Back up current /etc/resolv.conf
+  copy:
+    src: /etc/resolv.conf
+    dest: /etc/resolv.conf.backup
+    owner: root
+    group: root
+    mode: '0644'
+  become: yes
+  tags: backup_resolv_conf
+
+- name: Create a new /etc/resolv.conf with dynamic content
+  template:
+    src: resolv.conf.j2
+    dest: /etc/resolv.conf
+    owner: root
+    group: root
+    mode: '0644'
+  become: yes
+  tags: create_resolv_conf
+
+- name: Join the machine to the AD domain
+  shell: echo "{{ ad_domain_admin_password }}" | realm join --user={{ ad_domain_admin_user }} "{{ ad_domain }}" --verbose
+  become: yes
+  register: realm_join
+  tags: join_domain
+
+- name: Ensure SSSD is running and enabled
+  systemd:
+    name: sssd
+    state: started
+    enabled: yes
+  become: yes
+  tags: sssd_service
+
+- name: Update the PAM configuration
+  command: /usr/sbin/pam-auth-update --enable mkhomedir
+  become: yes
+  tags: pam_update
+  ignore_errors: yes
+
+- name: Change access_provider to simple in sssd.conf
+  replace:
+    path: /etc/sssd/sssd.conf
+    regexp: 'access_provider = ad'
+    replace: 'access_provider = simple'
+  become: yes
+  notify: restart sssd
+  tags: update_sssd_config
+
+- name: Add dynamic simple_allow_groups to sssd.conf
+  lineinfile:
+    path: /etc/sssd/sssd.conf
+    state: present
+    regexp: '^simple_allow_groups'
+    line: 'simple_allow_groups = {{ simple_allow_groups | join(", ") }}'
+  become: yes
+  notify: restart sssd
+  tags: update_sssd_config
+
+- name: Add dynamic sudoers users and groups with privileges to /etc/sudoers
+  lineinfile:
+    path: /etc/sudoers
+    state: present
+    insertafter: EOF
+    line: |
+      {% if item.type == 'group' %}
+      %{{ item.name }} {{ item.privilege }}
+      {% elif item.type == 'user' %}
+      {{ item.name }} {{ item.privilege }}
+      {% endif %}
+    validate: 'visudo -cf %s'
+  loop: "{{ sudoers_privileges }}"
+  loop_control:
+    label: "{{ item.name }}"
+  become: yes
+  tags: update_sudoers
+
+- name: Restart SSSD
+  systemd:
+    name: sssd
+    state: restarted
+  become: yes
+  when:
+    - '"restart sssd" in ansible_run_tags or "update_sssd_config" in ansible_run_tags'
+  tags: restart_sssd

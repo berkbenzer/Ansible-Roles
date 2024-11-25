@@ -1,0 +1,9 @@
+# roles/ad_join/templates/resolv.conf.j2
+
+{% if dns_search_domains %}
+search {{ dns_search_domains | join(" ") }}
+{% endif %}
+
+{% for nameserver in dns_nameservers %}
+nameserver {{ nameserver }}
+{% endfor %}

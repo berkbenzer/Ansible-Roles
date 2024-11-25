@@ -1,0 +1,29 @@
+# Use public servers from the pool.ntp.org project.
+# Please consider joining the pool (http://www.pool.ntp.org/join.html).
+{% for server in ntp_servers %}
+server {{ server }}
+{% endfor %}
+
+# Allow NTP client access from local network.
+# allow 192.168.0.0/24
+
+# Ignore stratum in source selection.
+#stratumweight 0
+
+# Record the rate at which the system clock gains/losses time.
+driftfile /var/lib/chrony/drift
+
+# In first three updates step the system clock instead of slew
+# if the adjustment is larger than 10 seconds.
+makestep 1.0 3
+
+# Enable kernel synchronisation (every 11 minutes) of the real-time clock.
+rtcsync
+
+# Enable hardware timestamping on all interfaces that support it.
+#hwtimestamp *
+
+# Increase the minimum number of selectable sources required to adjust
+# the system clock.
+#minsources 2
+logdir /var/log/chrony

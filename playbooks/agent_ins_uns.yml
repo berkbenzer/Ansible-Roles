@@ -1,0 +1,286 @@
+---
+- name: Agent Installation
+  hosts: "{{ target_group }}"
+  become: true
+
+  tasks:
+    - name: Check if check-mk-agent.socket service is present
+      command: systemctl status check-mk-agent.socket
+      register: service_check
+      ignore_errors: true
+      changed_when: false
+
+    - name: Display message if service is already installed
+      debug:
+        msg: "check-mk-agent.socket service is already installed and running."
+      when: service_check.rc == 0
+      tags:
+        - checkmk
+    - block:
+        - name: Copy check-mk-agent RPM to target server
+          copy:
+            src: /home/folder/ansible_dir/files/Check-MK/check-mk-agent-1.6.0p24-c0fa3260ee7d0ab2.noarch.rpm
+            dest: /tmp
+
+        - name: Install check-mk-agent RPM
+          command: rpm -ivh /tmp/check-mk-agent-1.6.0p24-c0fa3260ee7d0ab2.noarch.rpm
+
+
+        - name: Start and enable check-mk-agent.socket service
+          systemd:
+            name: check-mk-agent.socket
+            enabled: yes
+            state: started
+      when: service_check.rc != 0
+
+    - name: Continue with other tasks in the playbook
+      debug:
+        msg: "Continuing with other tasks..."
+
+    - name: Xagt Rpm Control for EDR
+      command: rpm -q xagt-35.31.25-1.el7.x86_64
+      register: rpm_check
+      ignore_errors: true
+
+    - block:
+        - name: Copy EDR agent RPM to target machine
+          copy:
+            src: /home/folder/ansible_dir/files/EDR/xagt-35.31.25-1.el7.x86_64.rpm
+            dest: /tmp/xagt-35.31.25-1.el7.x86_64.rpm
+
+        - name: Copy agent_config.json to target machine
+          copy:
+            src: /home/folder/ansible_dir/files/EDR/agent_config.json
+            dest: /tmp/agent_config.json
+
+        - name: Install the EDR agent RPM
+          command: rpm -Uvh /tmp/xagt-35.31.25-1.el7.x86_64.rpm
+          register: install_result
+          ignore_errors: true
+
+        - name: Ensure the package was installed or upgraded
+          fail:
+            msg: "Failed to install or upgrade the EDR agent RPM."
+          when: install_result.rc != 0 and "'is already installed'" not in install_result.stderr
+
+        - name: Configure the EDR agent
+          command: /opt/fireeye/bin/xagt -i /tmp/agent_config.json
+
+        - name: Ensure the xagt service is running
+          systemd:
+            name: xagt
+            state: started
+            enabled: yes
+
+        - name: Check the status of the xagt service
+          systemd:
+            name: xagt
+            state: started
+            enabled: yes
+      when: rpm_check.rc != 0
+      tags:
+        - edr_install
+
+    - name: Check if /opt/LsRun directory exists
+      ansible.builtin.stat:
+        path: /opt/LsRun
+      register: lsrun_dir
+
+    - name: Install LanSweeper Agent
+      block:
+        - name: Create /opt/LsRun directory
+          ansible.builtin.file:
+            path: /opt/LsRun
+            state: directory
+
+        - name: Copy LanSweeper Agent
+          copy:
+            src: /home/folder/ansible_dir/files/LansweeperAgent/LsAgent-linux.run_V10.4.2.run
+            dest: /opt/LsRun/LsAgent-linux.run_V10.4.2.run
+
+        - name: Set execute permission on LanSweeper
+          ansible.builtin.file:
+            path: /opt/LsRun/LsAgent-linux.run_V10.4.2.run
+            mode: '0755'
+            state: file
+        - name: Run LsAgent installer in unattended mode
+          command: /opt/LsRun/LsAgent-linux.run_V10.4.2.run --server MASTER_IPADDRESS --mode unattended
+      when: not lsrun_dir.stat.exists
+
+      tags:
+        - lsw_install
+
+    - name: iSAMS Unistallation
+      block:
+        - name: Create file with 'yes' for input
+          copy:
+            content: "yes\n"
+            dest: /tmp/input_yes.txt
+
+        - name: UnInstall Agent Configuration
+          shell: |
+              #!/bin/bash
+              cd /SSR
+              systemctl stop SSRSA.service
+              ./Uninstaller-linux-64 < /tmp/input_yes.txt
+          ignore_errors: true
+          register: uninstall_result
+
+        - name: Debug stdout of the uninstallation
+          debug:
+            msg: "STDOUT: {{ uninstall_result.stdout }}"
+
+        - name: Debug stderr of the uninstallation
+          debug:
+            msg: "STDERR: {{ uninstall_result.stderr }}"
+
+        - name: Check return code of the uninstallation command
+          debug:
+            msg: "Return Code: {{ uninstall_result.rc }}"
+
+      tags:
+        - isams_uninstall
+
+    - name: iSAMS Installation
+      block:
+        - name: iSAMS folder create for Installation
+          ansible.builtin.file:
+            path: /isams
+            state: directory
+
+        - name: iSAMS Move Files to iSAMS folder
+          copy:
+            src: /home/folder/ansible_dir/files/iSAMS/linux/
+            dest: /isams
+
+        - name: Set Permission 0644
+          file:
+            path: /isams/Install.sh
+            mode: '0644'
+            state: file
+
+        - name: Give Execution right to Install file
+          command: chmod +x /isams/Install.sh
+
+        - name: Check if the Port is open
+          wait_for:
+            host: "MASTER_IP"
+            port: 443
+            timeout: 10
+          register: port_check
+
+        - name: Display port check result
+          debug:
+            msg: "Port 443 on MASTER_IP is {{ 'open' if port_check.elapsed < 10 else 'closed' }}"
+
+        - name: Check if SSR directory exists
+          stat:
+            path: "/SSR"
+          register: ssr_dir
+
+        - name: Run command iSAMS if port is open and SSR directory does not exist
+          command: /isams/Install.sh 2 0 /SSR
+          args:
+            chdir: /isams
+          when:
+            - not ssr_dir.stat.exists
+
+        - name: Stop functions
+          command: /SSR/SA-linux-64 --stop
+
+        - name: Ensure ExecStart line is correct in the service file
+          lineinfile:
+            path:  /usr/lib/systemd/system/SSRSA.service
+            regexp: '^ExecStart='
+            line: 'ExecStart=/SSR/SA-linux-64 --start'
+            state: present
+
+        - name: Ensure ExecStop line is correct in the service file
+          lineinfile:
+            path:  /usr/lib/systemd/system/SSRSA.service
+            regexp: '^ExecStop='
+            line: 'ExecStop=/SSR/SA-linux-64 --stop'
+            state: present
+
+        - name: Reload systemd daemon after updating the service file
+          command: systemctl daemon-reload
+
+        - name: Restart the service
+          systemd:
+            name: SSRSA.service
+            state: restarted
+
+        - name: Display SSR process status
+          debug:
+            msg: "SSR process is {{ 'running' if ssrsa_process.rc == 0 else 'not running' }}"
+
+      tags:
+        - isams_setup
+
+    - name: itom installation
+      block:
+        - name: Rpm check
+          shell:
+            cmd: rpm -qa | grep agent-client-collector-4.0.0-1.x86_64
+          ignore_errors: True
+          register: rpm_check
+
+        - name: Transfer itom RPM
+          copy:
+            src: /home/folder/ansible_dir/files/agent-client-collector-4.0.0-x86_64.rpm
+            dest: /tmp/
+          when: rpm_check.rc !=0
+
+        #- name: Old agent delete
+        #  yum:
+        #    name:
+        #      - agent-client-collector-3.1.0-1.el7.x86_64
+        #      - agent-client-collector-4.0.0-1.x86_64
+        #    state: absent
+        #  when: rpm_check.rc !=0
+
+        - name: install rpm packages
+          command: rpm -ivhi --noscipts /tmp/agent-client-collector-4.0.0-x86_64.rpm
+          ignore_errors: True
+
+        - name: Transfer itom sudoers file
+          copy:
+            src:  /home/folder/ansible_dir/files/01_servicenow
+            dest: /etc/sudoers.d/
+          ignore_errors: True
+
+        - name: Backup Service File
+          command: mv /usr/lib/systemd/system/acc.service /usr/lib/systemd/system/acc.service_bak
+          ignore_errors: True
+
+        - name: Backup acc.yml File
+          command: /etc/servicenow/agent-client-collector/acc.yml /etc/servicenow/agent-client-collector/acc.yml_bak
+          ignore_errors: True
+
+        - name: Transfer itom acc.yml
+          copy:
+            src: /home/folder/ansible_dir/files/acc.yml
+            dest: /etc/servicenow/agent-client-collector/acc.yml
+          become: True
+          ignore_errors: True
+
+        - name: Transfer acc service file
+          copy:
+            src:  /home/folder/ansible_dir/files/acc.service
+            dest: /usr/lib/systemd/system/
+          become: True
+          ignore_errors: True
+
+        - name: Daemon Reload
+          command: systemctl daemon-reload
+
+        - name: Check the status of the xagt service
+          systemd:
+            name: acc
+            state: restarted
+            enabled: yes
+
+      tags:
+        - itom_setup
+
+

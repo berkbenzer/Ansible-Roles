@@ -1,11 +1,10 @@
 - name: Change root password with unique passwords per server
   hosts: "{{ target_group }}"
   become: true
-
   tasks:
     - name: Generate a random password for the root user
       set_fact:
-        unique_password: "{{ lookup('password', '/dev/null length=24 chars=ascii_letters,digits,specialchars') }}"
+        unique_password: "{{ lookup('password', '/dev/null length=34 chars=ascii_letters,digits,punctuation') }}"
 
     - name: Change the root password
       user:
@@ -15,3 +14,4 @@
     - name: Display the new root password
       debug:
         msg: "New root password for {{ inventory_hostname }}: {{ unique_password }}"
+

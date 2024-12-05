@@ -1,0 +1,42 @@
+---
+- name: Check which users and groups have root access and sudo rights
+  hosts: "{{ target_group }}"
+  become: yes
+  tasks:
+
+    - name: Get the hostname
+      command: hostname
+      register: hostname_output
+      changed_when: false
+
+    - name: Gather users with sudo privileges from the sudoers file
+      command: "grep -E '^[^#]*NOPASSWD: *ALL' /etc/sudoers"
+      register: sudoers_file
+      ignore_errors: yes
+
+    - name: List sudo group users
+      command: "getent group sudo"
+      register: sudo_group_users
+      ignore_errors: yes
+
+    - name: List root group users
+      command: "getent group root"
+      register: root_group_users
+      ignore_errors: yes
+
+    - name: Gather users with UID 0 (root access)
+      command: "awk -F: '$3 == 0 {print $1}' /etc/passwd"
+      register: root_uid_users
+
+    - name: Display gathered information
+      debug:
+        msg: |
+          Hostname: {{ hostname_output.stdout }}
+          Sudoers File Entries:
+          {% for line in sudoers_file.stdout_lines %}
+            - {{ hostname_output.stdout }}, {{ line.split(':')[0] }}, {{ line.split(':')[1] }}
+          {% endfor %}
+          Users in sudo group: {{ sudo_group_users.stdout if sudo_group_users.stdout else 'None' }}
+          Users in root group: {{ root_group_users.stdout if root_group_users.stdout else 'None' }}
+          Users with UID 0: {{ root_uid_users.stdout_lines if root_uid_users.stdout_lines else 'None' }}
+

@@ -1,0 +1,30 @@
+---
+- name: Check SMB Connection on Linux Server
+  hosts: "{{ target_group }}"
+  become: true
+  tasks:
+
+    - name: Check for SMB mounts
+      command: mount | grep -i cifs
+      register: smb_mounts
+      ignore_errors: yes
+
+    - name: Display SMB mounts if found
+      debug:
+        msg: "SMB mount found: {{ smb_mounts.stdout }}"
+      when: smb_mounts.stdout != ""
+
+    - name: Check for active SMB connections (port 445)
+      command: ss -tn | grep ':445'
+      register: smb_connections
+      ignore_errors: yes
+
+    - name: Display active SMB connections if found
+      debug:
+        msg: "Active SMB connection found: {{ smb_connections.stdout }}"
+      when: smb_connections.stdout != ""
+
+    - name: No SMB connection or mount found
+      debug:
+        msg: "No SMB connections or mounts found."
+      when: smb_mounts.stdout == "" and smb_connections.stdout == ""

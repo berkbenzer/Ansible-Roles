@@ -15,3 +15,11 @@
       debug:
         msg: "New root password for {{ inventory_hostname }}: {{ unique_password }}"
 
+    - name: Write the new root password to a file
+      lineinfile:
+        path: /home/ansible_dir/root_password.txt
+        line: "New root password for {{ inventory_hostname }}: {{ unique_password }}"
+        create: yes
+      delegate_to: localhost
+
+

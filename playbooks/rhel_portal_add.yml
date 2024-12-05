@@ -1,0 +1,33 @@
+---
+
+- name: Portal add
+  hosts: "{{ target_groups }}"
+  become: true
+
+  tasks:
+    - name: Register the system with Red Hat Subscription Management
+      shell: >
+        subscription-manager register
+        --username= user_name
+        --password= password
+      args:
+        warn: false
+      register: register_output
+      ignore_errors: true
+
+    - name: Check if registration was successful
+      debug:
+        msg: "Registration output: {{ register_output.stdout }}"
+
+    - name: Attach subscription automatically
+      shell: >
+        subscription-manager attach --auto
+      when: register_output.rc == 0
+      args:
+        warn: false
+      register: attach_output
+      ignore_errors: true
+
+    - name: Check if auto-attach was successful
+      debug:
+        msg: "Attach output: {{ attach_output.stdout }}"

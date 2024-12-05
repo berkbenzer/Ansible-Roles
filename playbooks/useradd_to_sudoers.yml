@@ -1,0 +1,18 @@
+---
+
+- name: Check which users and groups have root access and sudo rights
+  hosts: "{{ target_group }}"
+  become: yes
+  tasks:
+    - name: Make sudo without password for users with request ID
+      blockinfile:
+        path: /etc/sudoers.d/80-ansible-sudo-user
+        block: |
+          # RequestID:  {{ item.request_id }}
+          {% for user in item.users %}
+          {{ user }} ALL=(ALL) NOPASSWD:ALL
+          {% endfor %}
+        create: yes
+        state: present
+        mode: 0440
+      loop: "{{ sudo_users }}"

@@ -1,0 +1,19 @@
+- name: Try connecting with users and get server details
+  hosts: "{{ target_group }}"
+  gather_facts: true
+  become: yes
+
+
+  tasks:
+    - name: Determine if the system is virtual or physical
+      set_fact:
+        system_type: "{{ 'Virtual' if ansible_virtualization_role != 'NA' else 'Physical' }}"
+
+    - name: Print hostname, CPU, Memory, and System Type
+      debug:
+        msg: |
+          Hostname: {{ ansible_hostname }};
+          CPU Count: {{ ansible_processor_vcpus }};
+          Total Memory: {{ ansible_memtotal_mb }} MB;
+          System Type: {{ system_type }};
+          Red Hat Version: {{ ansible_distribution }} {{ ansible_distribution_version }};

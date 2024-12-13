@@ -1,0 +1,22 @@
+---
+- name: Check which users and groups have root access and sudo rights
+  hosts: "{{ target_group }}"
+  become: yes
+  tasks:
+
+    - name: Get the hostname
+      command: hostname
+      register: hostname_output
+      changed_when: false
+
+    - name: Get Groups from the sssd file
+      command: "grep -E 'simple_allow_groups' /etc/sssd/sssd.conf"
+      register: sssd_file
+      ignore_errors: yes
+
+
+    - name: Display gathered information
+      debug:
+        msg: |
+          Hostname: {{ hostname_output.stdout }}
+          SssdParameter: {{ sssd_file.stdout }}

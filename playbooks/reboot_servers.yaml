@@ -1,0 +1,24 @@
+---
+- name: Reboot the Servers
+  hosts: "{{ target_group }}"
+  become: true
+  gather_facts: true
+
+  tasks:
+    - name: Show server hostname and IP address
+      debug:
+        msg: |
+          Hostname: {{ ansible_hostname }}
+          IP Address: {{ ansible_default_ipv4.address }}
+
+
+    - name: Ask for confirmation before Rebooting
+      pause:
+        prompt: "Do you really want to restart this/these server/servers? Type 'Y' to proceed"
+      register: restart_input
+
+    - name: Rebooting server/servers
+      when: restart_input.user_input == 'Y'
+      command: reboot -f
+
+

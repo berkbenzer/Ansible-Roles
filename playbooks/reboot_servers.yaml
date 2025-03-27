@@ -20,5 +20,7 @@
     - name: Rebooting server/servers
       when: restart_input.user_input == 'Y'
       command: reboot -f
+      #command: echo b > /proc/sysrq-trigger    Will immediately reboot the system without syncing or unmounting your disks.
+
 
 

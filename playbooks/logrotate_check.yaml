@@ -1,0 +1,32 @@
+---
+- name: Check if logrotate is working
+  hosts: "{{ target_group }}"
+  become: yes
+  gather_facts: yes
+
+  tasks:
+    - name: Ensure logrotate is installed (handle both RHEL 7 & 8+)
+      block:
+        - name: Install logrotate on RHEL 7 (yum)
+          ansible.builtin.yum:
+            name: logrotate
+            state: present
+          when: ansible_distribution_major_version == "7"
+
+        - name: Install logrotate on RHEL 8+ (dnf)
+          ansible.builtin.dnf:
+            name: logrotate
+            state: present
+          when: ansible_distribution_major_version | int >= 8
+      when: ansible_distribution in ["RedHat", "CentOS"]
+      register: logrotate_pkg
+
+    - name: Check logrotate version
+      ansible.builtin.command: logrotate --version
+      register: logrotate_version
+      changed_when: false
+      ignore_errors: true
+
+    - name: Display logrotate version
+      ansible.builtin.debug:
+        msg: "Logrotate version: {{ logrotate_version.stdout_lines | default('Error retrieving version') }}"

@@ -1,0 +1,27 @@
+- name: Install Cli MOnitoring tools
+  hosts: "{{ target_group }}"
+  gather_facts: true
+  become: yes
+
+
+  tasks:
+    - name: Install Monitoring tool
+      yum:
+        name: "{{ packages }}"
+      vars:
+        packages:
+          - sysstat
+          - net-tools
+          - iproute
+          - ethtool
+          - nmap
+          - tcpdump
+          - nc
+          - mtr
+          - iperf3
+          - bind-utils
+          - traceroute
+          - telnet
+          - wireshark-cli
+          - curl
+          - wget

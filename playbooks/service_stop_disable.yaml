@@ -1,0 +1,13 @@
+---
+- name: Restart Service
+  hosts: "{{ target_group }}"
+  become: true
+  gather_facts: no
+
+  tasks:
+    - name: Restart the status of the xagt service
+      systemd:
+        name: dnf-makecache
+        state: stopped
+        enabled: false
+

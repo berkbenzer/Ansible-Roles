@@ -1,0 +1,12 @@
+---
+
+- name: Port Check
+  hosts: "{{ target_group }}"
+  become: yes
+  tasks:
+    - name: Check if the Port is opeon
+      shell: |
+        for iface in $(ls /sys/class/net/ | grep -v -e  "lo" -e "virbr0" );
+          do   echo -n "$iface: ";
+          ethtool $iface 2>/dev/null | grep -i speed | grep -v "Unknown!" || echo "N/A";
+        done

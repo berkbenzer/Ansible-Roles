@@ -1,10 +1,10 @@
 ---
 
-- name: Port Check
+- name: NIC Speed Display
   hosts: "{{ target_group }}"
   become: yes
   tasks:
-    - name: Check if the Port is opeon
+    - name: Display NIC Speed
       shell: |
         for iface in $(ls /sys/class/net/ | grep -v -e  "lo" -e "virbr0" );
           do   echo -n "$iface: ";

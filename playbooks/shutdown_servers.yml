@@ -1,0 +1,22 @@
+---
+- name: Shut Down the Servers
+  hosts: "{{ target_group }}"
+  become: true
+  gather_facts: true
+
+  tasks:
+    - name: Show server hostname and IP address
+      debug:
+        msg: |
+          Hostname: {{ ansible_hostname }}
+          IP Address: {{ ansible_default_ipv4.address }}
+
+
+    - name: Ask for confirmation before shutdown
+      pause:
+        prompt: "Do you really want to shutdown this/these server/servers? Type 'Y' to proceed"
+      register: shutdown_input
+
+    - name: Shutdown server
+      when: shutdown_input.user_input == 'Y'
+      command: shutdown -h now

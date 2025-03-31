@@ -1,0 +1,15 @@
+---
+- name: Show multipath policies simply
+  hosts: "{{ target_group }}"
+  become: true
+  gather_facts: false
+  tasks:
+    - name: Check multipath policies with hostname
+      shell: |
+        echo "Host: $(hostname)"
+        multipath -ll | grep "policy="
+      register: policy_output
+
+    - name: Show policy output
+      debug:
+        msg: "{{ policy_output.stdout_lines }}"

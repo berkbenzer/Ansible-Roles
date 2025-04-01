@@ -1,0 +1,10 @@
+---
+- name: Rpm Check
+  hosts: "{{ target_group }}"
+  become: true
+
+  tasks:
+    - name: SYMCLI version Task Shell
+      shell: |
+              PATH=$PATH:/usr/symcli/bin
+              symcli | grep "built with SYMAPI Version"

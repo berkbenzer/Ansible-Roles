@@ -1,0 +1,37 @@
+---
+- name: Check if backup image mount points are mounted
+  hosts: "{{ target_group }}"
+  become: yes
+  gather_facts: no
+
+  vars:
+    mount_points:
+      - /partitions0
+      - /partitions1
+      - /partitions2
+
+  tasks:
+    - name: Check if mount points are mounted
+      shell: "mount | grep -w {{ item }}"
+      register: mount_check
+      ignore_errors: true
+      changed_when: false
+      loop: "{{ mount_points }}"
+      loop_control:
+        label: "{{ item }}"
+
+    - name: Print mount status
+      debug:
+        msg: >
+          {% if item.rc == 0 %}
+              {{ item.item }} is mounted.
+          {% else %}
+              {{ item.item }} is NOT mounted.
+          {% endif %}
+      loop: "{{ mount_points.result }}"
+
+    - name: Fail if any mount is missing
+      fail:
+        msg: "{{ item.item }} is not mounted!"
+      when: item.rc != 0
+      with_indexed_items: "{{ mount_check.results }}"

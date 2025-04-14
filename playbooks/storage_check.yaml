@@ -1,0 +1,70 @@
+---
+- name: Check multipath and disk health on each host
+  hosts: "{{ target_group }}"
+  become: true
+  gather_facts: false
+  tasks:
+
+    - name: Check if multipath is installed
+      command: which multipath
+      register: multipath_check
+      ignore_errors: true
+
+    - name: Run checks only if multipath is installed
+      block:
+
+        - name: Get multipathd service status
+          shell: systemctl is-active multipathd
+          register: multipathd_status
+          ignore_errors: true
+
+        - name: Get multipath output
+          shell: multipath -ll
+          register: multipath_output
+          ignore_errors: true
+
+        - name: Get today's date
+          command: date "+%b %e"
+          register: today_date
+
+        - name: Get dmesg output for today
+          shell: "dmesg | grep '{{ today_date.stdout }}' | grep -Ei 'error|fail|sd[a-z]|scsi|I/O'"
+          register: dmesg_output
+          ignore_errors: true
+
+        - name: Get df -h output
+          command: df -h
+          register: df_output
+
+      when: multipath_check.rc == 0
+
+    - name: Set per-host results
+      set_fact:
+        multipath_result:
+          multipath_installed: "{{ multipath_check.rc == 0 }}"
+          multipathd_status: "{{ multipathd_status.stdout | default('Not checked') }}"
+          multipath_output: "{{ multipath_output.stdout | default('Not checked') }}"
+          dmesg_errors: "{{ dmesg_output.stdout | default('Not checked') }}"
+          df_output: "{{ df_output.stdout | default('Not checked') }}"
+
+- name: Collect and write all results on Ansible server
+  hosts: localhost
+  gather_facts: false
+  tasks:
+
+    - name: Gather multipath results from all hosts
+      set_fact:
+        all_results: >-
+          {{
+            dict(
+              groups[target_group] | zip(
+                groups[target_group] | map('extract', hostvars, 'multipath_result') | list
+              )
+            )
+          }}
+
+    - name: Write results to YAML file on control node
+      copy:
+        content: "{{ all_results | to_nice_yaml }}"
+        dest: "/home/aeua0383@AUTOEVER.EUCORP.LOCAL/ansible_dir/playbooks/code_upgrade.yml"
+

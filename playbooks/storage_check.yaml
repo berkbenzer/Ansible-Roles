@@ -66,5 +66,5 @@
     - name: Write results to YAML file on control node
       copy:
         content: "{{ all_results | to_nice_yaml }}"
-        dest: "/home/aeua0383@AUTOEVER.EUCORP.LOCAL/ansible_dir/playbooks/code_upgrade.yml"
+        dest: "/home/ansible_dir/playbooks/code_upgrade.out"
 

@@ -1,0 +1,81 @@
+---
+- name: Install new version of SYMCLI
+  hosts: "{{ target_group }}"
+  become: true
+  vars:
+    symcli_tarball: "se10202-Linux-x86_64-ni.tar.gz"
+    tarball_dir: "/home/ansible_dir/files/smcli"
+    install_dir: "/opt/symcli_install"
+
+  tasks:
+    - name: Create installation directory
+      file:
+        path: "{{ install_dir }}"
+        state: directory
+        mode: '0755'
+
+    - name: Run symcfg discover
+      command: /usr/symcli/bin/symcfg discover
+      ignore_errors: yes
+
+    - name: Run symcli (basic check)
+      command: /usr/symcli/bin/symcli
+      ignore_errors: yes
+
+    - name: Run symdg list
+      command: /usr/symcli/bin/symdg list
+      ignore_errors: yes
+
+    - name: Run symdg exportall
+      command: /usr/symcli/bin/symdg exportall
+      register: symdg_export_result
+      ignore_errors: yes
+
+    - name: Show output of symdg exportall
+      debug:
+        msg: |
+          Command stdout:
+          {{ symdg_export_result.stdout }}
+
+          Command stderr (if any):
+          {{ symdg_export_result.stderr }}
+
+    - name: Backup symapi_db.bin
+      command: cp /var/symapi/db/symapi_db.bin /var/symapi/db/symapi_db.bin.Old
+      ignore_errors: yes
+
+    - name: Copy SYMCLI tarball to target server
+      copy:
+        src: "{{ tarball_dir }}/{{ symcli_tarball }}"
+        dest: "{{ install_dir }}/"
+        mode: '0644'
+
+    - name: Extract SYMCLI tarball
+      shell: |
+        cd {{ install_dir }}
+        tar xf {{ symcli_tarball }}
+      args:
+        executable: /bin/bash
+
+    - name: Run SYMCLI installer silently
+      shell: |
+        cd {{ install_dir }}
+        ./se10*_install.sh -install -silent
+      args:
+        executable: /bin/bash
+
+    - name: Backup new symapi_db.bin after install
+      shell: |
+        cd /var/symapi/db
+        mv symapi_db.bin symapi_db.bin.Old
+      args:
+        executable: /bin/bash
+
+    - name: Run symcfg discover
+      command: /usr/symcli/bin/symcfg discover
+
+    - name: Run symcli (basic check)
+      command: /usr/symcli/bin/symcli
+
+    - name: Import all symdg
+      command: /usr/symcli/bin/symdg importall

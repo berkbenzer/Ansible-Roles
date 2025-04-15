@@ -1,0 +1,50 @@
+---
+- name: Add login warning banner on Red Hat systems
+  hosts: "{{ target_group }}"
+  become: yes
+
+  vars:
+    warning_message: |
+      ****************************************************************************
+      !!LOGIN MESAGE!!
+      ****************************************************************************
+
+  tasks:
+    - name: Set warning message in /etc/motd
+      copy:
+        content: "{{ warning_message }}"
+        dest: /etc/motd
+        owner: root
+        group: root
+        mode: '0644'
+
+    - name: Set warning message in /etc/issue
+      copy:
+        content: "{{ warning_message }}"
+        dest: /etc/issue
+        owner: root
+        group: root
+        mode: '0644'
+
+    - name: Set warning message in /etc/issue.net
+      copy:
+        content: "{{ warning_message }}"
+        dest: /etc/issue.net
+        owner: root
+        group: root
+        mode: '0644'
+
+    - name: Ensure banner is configured in SSH
+      lineinfile:
+        path: /etc/ssh/sshd_config
+        regexp: '^Banner'
+        line: 'Banner /etc/issue.net'
+        state: present
+        create: yes
+        backup: yes
+
+    - name: Restart SSH service to apply banner setting
+      service:
+        name: sshd
+        state: restarted
+        enabled: yes

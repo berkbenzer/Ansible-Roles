@@ -1,0 +1,12 @@
+---
+- name: Transfer files
+  hosts: "{{ target_group }}"
+  become: true
+
+  tasks:
+    - name: Transfer files
+      copy:
+        src: /home/ansible_dir/files/ssl
+        dest: /tmp
+      become: True
+      ignore_errors: True

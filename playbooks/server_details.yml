@@ -5,9 +5,18 @@
 
 
   tasks:
+    - name: Get system manufacturer
+      command: dmidecode -s system-manufacturer
+      register: manufacturer_output
+      changed_when: false
+
     - name: Determine if the system is virtual or physical
       set_fact:
-        system_type: "{{ 'Virtual' if ansible_virtualization_role != 'NA' else 'Physical' }}"
+        system_type: "{{ 'Physical' if manufacturer_output.stdout != 'VMware, Inc.' else 'Virtual' }}"
+        
+    - name: Determine if the system is virtual or physical System type again
+      set_fact:
+        system_type_2: "{{ 'Virtual' if ansible_virtualization_role == 'guest' else 'Physical' }}"  
 
     - name: Print hostname, CPU, Memory, and System Type
       debug:
@@ -16,4 +25,5 @@
           CPU Count: {{ ansible_processor_vcpus }};
           Total Memory: {{ ansible_memtotal_mb }} MB;
           System Type: {{ system_type }};
+          System Type 2: {{ system_type_2 }};
           Red Hat Version: {{ ansible_distribution }} {{ ansible_distribution_version }};

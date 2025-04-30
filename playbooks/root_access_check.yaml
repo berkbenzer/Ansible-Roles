@@ -9,7 +9,7 @@
 
     - name: Copy sh file to target server
       copy:
-        src: /home/scripts/root_access/root_alert.sh
+        src: /home/aeua0383@AUTOEVER.EUCORP.LOCAL/haee/scripts/root_access/root_alert.sh
         dest: /usr/local/bin
 
     - name: Update crontab for Root Access check
@@ -28,3 +28,38 @@
         path: '/usr/local/bin/root_alert.sh'
         mode: '0777'
         state: file
+
+    - name: Ensure sudoers parameter - logfile
+      ansible.builtin.lineinfile:
+        path: /etc/sudoers
+        line: 'Defaults    logfile="/var/log/sudo.log"'
+        state: present
+        validate: 'visudo -cf %s'
+
+    - name: Ensure sudoers parameter - mail_always
+      ansible.builtin.lineinfile:
+        path: /etc/sudoers
+        line: 'Defaults    mail_always'
+        state: present
+        validate: 'visudo -cf %s'
+
+    - name: Ensure sudoers parameter - requiretty
+      ansible.builtin.lineinfile:
+        path: /etc/sudoers
+        line: 'Defaults    requiretty'
+        state: present
+        validate: 'visudo -cf %s'
+
+    - name: Ensure sudoers parameter - env_keep EMAIL
+      ansible.builtin.lineinfile:
+        path: /etc/sudoers
+        line: 'Defaults    env_keep += "EMAIL"'
+        state: present
+        validate: 'visudo -cf %s'
+
+    - name: Ensure sudoers parameter - timestamp_timeout
+      ansible.builtin.lineinfile:
+        path: /etc/sudoers
+        line: 'Defaults    timestamp_timeout=0'
+        state: present
+        validate: 'visudo -cf %s'

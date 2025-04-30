@@ -1,0 +1,30 @@
+---
+- name: Root Access Check
+  hosts: "{{ target_group }}"
+  become: true
+
+  tasks:
+    - name: Backup Current crontab
+      shell : crontab -l > my_crontab.backup_20250217
+
+    - name: Copy sh file to target server
+      copy:
+        src: /home/aeua0383@AUTOEVER.EUCORP.LOCAL/haee/scripts/root_access/root_alert.sh
+        dest: /usr/local/bin
+
+    - name: Update crontab for Root Access check
+      cron:
+        name: "Root Access Check"
+        job: "/usr/local/bin/root_alert.sh"
+        minute: "*"
+        hour: "*"
+        day: "*"
+        month: "*"
+        weekday: "*"
+        user: root
+
+    - name: File Permission
+      ansible.builtin.file:
+        path: '/usr/local/bin/root_alert.sh'
+        mode: '0777'
+        state: file

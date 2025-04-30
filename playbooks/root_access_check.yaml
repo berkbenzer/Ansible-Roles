@@ -9,7 +9,7 @@
 
     - name: Copy sh file to target server
       copy:
-        src: /home/aeua0383@AUTOEVER.EUCORP.LOCAL/haee/scripts/root_access/root_alert.sh
+        src: /home/scripts/root_access/root_alert.sh
         dest: /usr/local/bin
 
     - name: Update crontab for Root Access check

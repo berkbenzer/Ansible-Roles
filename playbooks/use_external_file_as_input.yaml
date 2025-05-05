@@ -1,0 +1,15 @@
+    - name: iSAMS Unistallation
+      block:
+        - name: Create file with 'yes' for input
+          copy:
+            content: "yes\n"
+            dest: /tmp/input_yes.txt
+
+        - name: UnInstall Agent Configuration
+          shell: |
+              #!/bin/bash
+              cd /SSR
+              systemctl stop SSRSA.service
+              ./Uninstaller-linux-64 < /tmp/input_yes.txt
+          ignore_errors: true
+          register: uninstall_result

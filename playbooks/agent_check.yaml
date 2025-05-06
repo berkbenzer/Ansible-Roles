@@ -5,10 +5,10 @@
 
   tasks:
     - name: Process Check
-      shell: pgrep -af 'PROCESS'
+      shell: pgrep -af 'PROCESS' | awk '{printf $2}'
       register: agent_check
       ignore_errors: yes
       
     - name: Process Status
       debug:
-        msg: "{% if agent_check.stdout_lines == 1 %} 'Agent is Working'  {% else %} 'Agent is not Working' {% endif %}"
+        msg: "{% if agent_check.stdout_lines != '' %} 'Agent is Working'  {% else %} 'Agent is not Working' {% endif %}"

@@ -11,4 +11,4 @@
       
     - name: Process Status
       debug:
-        msg: "{% if agent_check.stdout_lines != '' %} 'Agent is Working'  {% else %} 'Agent is not Working' {% endif %}"
+        msg: "{% if agent_check.stdout_lines != '' %} 'Agent is Working'  {% else %} 'Agent is not Working! Please check the Server' {% endif %}"

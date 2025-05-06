@@ -8,11 +8,7 @@
       shell: pgrep -af 'PROCESS'
       register: agent_check
       ignore_errors: yes
-
-    - name: Process Check Output
-      debug:
-        msg: "{{ agent_check.stdout_lines}}"
-
+      
     - name: Process Status
       debug:
         msg: "{% if agent_check.stdout_lines == 1 %} 'Agent is Working'  {% else %} 'Agent is not Working' {% endif %}"

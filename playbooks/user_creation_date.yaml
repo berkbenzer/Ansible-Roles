@@ -1,0 +1,15 @@
+---
+- name: Find local users created
+  hosts: "{{ target_group }}"
+  become: true
+  gather_facts: false
+
+  tasks:
+    - name: List usernames under /home
+      shell: |
+        cd /home
+        for i in `ls -ltrh /home/ | grep -v "@" | awk '{print $9}'`; do
+          stat --print='%n %w' $i ;
+        done
+      args:
+        executable: /bin/bash

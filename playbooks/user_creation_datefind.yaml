@@ -13,3 +13,8 @@
         done
       args:
         executable: /bin/bash
+      register: loop_output
+      
+    - name: Display Clear Output
+      debug:
+        var: loop_output.stdout_lines

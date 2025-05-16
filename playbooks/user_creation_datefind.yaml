@@ -9,7 +9,7 @@
       shell: |
         cd /home
         for i in `ls -ltrh /home/ | grep -v "@" | awk '{print $9}'`; do
-          stat --print='%n %w' $i ;
+          stat --print='%n %w\n' $i ;
         done
       args:
         executable: /bin/bash
